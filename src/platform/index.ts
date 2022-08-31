@@ -1,3 +1,6 @@
+// Copyright (c) Tyler van der Hoeven.
+// Copyright (c) Izzuddin Natsir.
+
 import { dev } from '$app/environment';
 import type { RequestEvent } from '@sveltejs/kit';
 
