@@ -3,21 +3,19 @@
 
 import { dev } from '$app/environment';
 import type { RequestEvent } from '@sveltejs/kit';
+import type { Miniflare } from 'miniflare';
 
-export async function extendPlatformAndRequest(event: RequestEvent) {
-	if (!dev) return;
+let miniflare: Miniflare;
+let cf: IncomingRequestCfProperties;
+let context: ExecutionContext;
+let env: App.Platform['env'];
 
-	let context: ExecutionContext = {
-		passThroughOnException() {},
-		waitUntil() {}
-	};
+const ENV_VARIABLES = ['SECRET'];
+const KV_NAMESPACES = ['SESSION'];
+const BINDINGS = [...ENV_VARIABLES, ...KV_NAMESPACES];
 
-	function patch(_context: ExecutionContext, _global: Record<string, any>) {
-		Object.entries(_global).forEach(([property, value]) => {
-			// @ts-ignore
-			global[property] = value;
-		});
-
+if (dev) {
+	function setContext(_context: ExecutionContext) {
 		context = _context;
 	}
 
@@ -26,12 +24,10 @@ export async function extendPlatformAndRequest(event: RequestEvent) {
 
 	const { code: script } = await transform(
 		`
-export default {
-	fetch: async (_, env, context) => {
-		patch(context, { caches, crypto });
-		return new Response();
-	}
-}
+addEventListener('fetch', (event) => {
+	setContext({ waitUntil: event.waitUntil, passThroughOnException: event.passThroughOnException })
+	event.respondWith(new Response())
+})
 	`,
 		{
 			loader: 'js',
@@ -39,27 +35,47 @@ export default {
 		}
 	);
 
-	const miniflare = new Miniflare({
+	miniflare = new Miniflare({
+		script,
+
+		envPath: true,
+		packagePath: true,
+		wranglerConfigPath: true,
+
 		globalAsyncIO: true, // Allow async I/O outside handlers
 		globalRandom: true, // Allow secure random generation outside handlers
 		globalTimers: true, // Allow setting timers outside handlers
+
+		cfFetch: './.mf/cf.json',
+		kvNamespaces: KV_NAMESPACES,
 		globals: {
-			patch
-		},
-		kvNamespaces: ['SESSION'],
-		modules: true,
-		script
+			setContext
+		}
 	});
 
 	// setup cloudflare workers global and context
 	await miniflare.dispatchFetch('http://localhost:5173');
 
-	const env = (await miniflare.getBindings()) as {
-		SESSION: KVNamespace;
-	};
+	const _global = await miniflare.getGlobalScope();
 
-	// @ts-ignore
-	event.request.cf = await import('../../node_modules/.mf/cf.json');
+	Object.entries(_global).forEach(([property, value]) => {
+		if (['global', 'self', 'setContext', ...BINDINGS].includes(property)) return;
+		// @ts-ignore
+		global[property] = value;
+	});
+
+	cf = (await import('../../.mf/cf.json')) as IncomingRequestCfProperties;
+
+	env = (await miniflare.getBindings()) as App.Platform['env'];
+}
+
+export async function extendPlatformAndRequest(event: RequestEvent) {
+	if (!dev) return;
+
+	event.request = new Request(event.request.url, {
+		...event.request,
+		cf
+	});
 
 	event.platform = {
 		env,

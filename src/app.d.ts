@@ -4,6 +4,7 @@ declare namespace App {
 	// interface PageData {}
 	interface Platform {
 		env: {
+			SECRET: string;
 			SESSION: KVNamespace;
 		};
 		context: ExecutionContext;
