@@ -25,4 +25,5 @@ export default {
 	});
 
 	await mf.dispatchFetch('http://localhost:5173');
+	await mf.dispose();
 }
