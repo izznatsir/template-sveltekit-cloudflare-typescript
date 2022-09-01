@@ -1,8 +1,8 @@
 import type { Handle } from '@sveltejs/kit';
-import { extendPlatformAndRequest } from './platform';
+import { patchflare } from './platform';
 
 export const handle: Handle = async ({ event, resolve }) => {
-	await extendPlatformAndRequest(event);
+	if (import.meta.env.DEV) await patchflare(event);
 
 	return resolve(event);
 };

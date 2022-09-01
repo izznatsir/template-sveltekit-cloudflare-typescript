@@ -1,9 +1,9 @@
 .DS_Store
 node_modules
 /build
-/.mf
 /.svelte-kit
 /package
+/src/platform/cf.json
 .env
 .env.*
 !.env.example
