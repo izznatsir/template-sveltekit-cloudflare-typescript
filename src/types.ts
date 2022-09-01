@@ -1,1 +1,1 @@
-export type CfRequest = Request & { cf?: IncomingRequestCfProperties };
+export type RequestCloudflared = Request & { cf?: IncomingRequestCfProperties };
