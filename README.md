@@ -1,18 +1,10 @@
-# create-svelte
+# Svelte Kit Template for Cloudflare Pages
 
-Everything you need to build a Svelte project, powered by [`create-svelte`](https://github.com/sveltejs/kit/tree/master/packages/create-svelte).
+Inspired by https://github.com/tyvdh/boilerkit auhtored by Tyler van der Hoeven.
 
-## Creating a project
+It use Miniflare to reflect Cloudflare Workers behaviour on Vite development environment. It extends `boilerkit` with `Request#cf` object, all Miniflare globals, and Typescript.
 
-If you're seeing this, you've probably already done this step. Congrats!
-
-```bash
-# create a new project in the current directory
-npm create svelte@latest
-
-# create a new project in my-app
-npm create svelte@latest my-app
-```
+If you use bindings, you need to define those bindings inside the miniflare settings located at `./src/platform/index.ts`. For environment variables, it automatically imported from a `.env` file.
 
 ## Developing
 
